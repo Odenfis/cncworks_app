@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>PQ CNC Works — ERP</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/global.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div style="padding: 24px 20px; border-bottom: 1px solid var(--border);">
+                <div class="logo-title" style="font-size: 24px;">PQ CNC</div>
+                <div class="logo-sub">WORKS, LLC</div>
+            </div>
+            <nav>
+                <div style="padding: 10px 20px; font-size: 9px; color: var(--muted); letter-spacing: 2px;">OPERACIONES
+                </div>
+                <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">⬛ Dashboard</div>
+                <div class="nav-item" id="nav-production" onclick="showPage('production')">⚙️ Producción</div>
+                <div class="nav-item" id="nav-machines" onclick="showPage('machines')">🔩 Máquinas</div>
+                <div
+                    style="padding: 10px 20px; font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-top:10px;">
+                    COMERCIAL</div>
+                <div class="nav-item" id="nav-sales" onclick="showPage('sales')">📋 Ventas</div>
+                <div class="nav-item" id="nav-clients" onclick="showPage('clients')">🏭 Clientes</div>
+                <div class="nav-item" id="nav-purchases" onclick="showPage('purchases')">🛒 Compras</div>
+                <div class="nav-item" id="nav-suppliers" onclick="showPage('suppliers')">🚚 Proveedores</div>
+                <div style="padding: 10px 20px; font-size: 9px; color: var(--muted); letter-spacing: 2px;">INVENTARIO
+                </div>
+                <div class="nav-item" id="nav-inventory" onclick="showPage('inventory')">📦 Inventario</div>
+                <div
+                    style="padding: 10px 20px; font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-top:10px;">
+                    ADMIN</div>
+                <div class="nav-item" onclick="logout()" style="color:var(--red);">🚪 Cerrar Sesión</div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div style="font-family:'Bebas Neue'; font-size:22px; letter-spacing:1px;">OPERATIONS DASHBOARD</div>
+                <div id="userBadge"
+                    style="font-size:11px; color:var(--muted); background:var(--card); padding:5px 12px; border:1px solid var(--border); border-radius:4px;">
+                    Cargando...
+                </div>
+            </header>
+            <div class="page" id="pg-dashboard">
+                <div class="content-padding">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Órdenes Activas</div>
+                            <div id="kpi-orders" class="kpi-value">0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--accent3);">
+                            <div class="kpi-label">Revenue Mes (MTD)</div>
+                            <div id="kpi-revenue" class="kpi-value">$0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--accent2);">
+                            <div class="kpi-label">Eficiencia Promedio</div>
+                            <div class="kpi-value">84%</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--red);">
+                            <div class="kpi-label">Alertas Stock</div>
+                            <div id="kpi-stock" class="kpi-value">0</div>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px;">
+                        <div class="panel">
+                            <div class="panel-hdr">ORDENES DE TRABAJO ACTIVAS</div>
+                            <table class="tbl">
+                                <thead>
+                                    <tr>
+                                        <th>WO #</th>
+                                        <th>Cliente</th>
+                                        <th>Entrega</th>
+                                        <th>Avance</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-orders"></tbody>
+                            </table>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-hdr">ESTADO DE PLANTA</div>
+                            <div id="machine-list" style="padding:15px; display:flex; flex-direction:column; gap:10px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- PRODUCCION -->
+            <div class="page" id="pg-production" style="display:none;">
+                <div class="content-padding">
+                    <!-- KPIs Produccion -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">WOs Este Mes</div>
+                            <div id="prod-kpi-total" class="kpi-value">0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--accent3);">
+                            <div class="kpi-label">Entregas a Tiempo</div>
+                            <div id="prod-kpi-ontime" class="kpi-value">0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--accent2);">
+                            <div class="kpi-label">En Proceso Activas</div>
+                            <div id="prod-kpi-active" class="kpi-value">0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--red);">
+                            <div class="kpi-label">WOs Bloqueadas</div>
+                            <div id="prod-kpi-blocked" class="kpi-value">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla Completa de Produccion -->
+                    <div class="panel">
+                        <div class="panel-hdr">CONTROL MAESTRO DE PRODUCCIÓN</div>
+                        <table class="tbl">
+                            <thead>
+                                <tr>
+                                    <th>WO #</th>
+                                    <th>Cliente</th>
+                                    <th>Descripción</th>
+                                    <th>Cant.</th>
+                                    <th>Material</th>
+                                    <th>Máquina</th>
+                                    <th>Entrega</th>
+                                    <th>Avance</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prod-table-body">
+                                <!-- Datos dinámicos -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- MAQUINAS -->
+            <div class="page" id="pg-machines" style="display:none;">
+                <div class="content-padding">
+                    <div class="section-hdr">
+                        <h2 style="font-family:'Bebas Neue'; color:var(--accent); letter-spacing:1px;">REGISTRO Y ESTADO
+                            DE MAQUINARIA</h2>
+                    </div>
+
+                    <!-- Grid de Estado Operativo -->
+                    <div id="machines-status-grid"
+                        style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:16px;">
+                        <!-- Se carga dinámicamente -->
+                    </div>
+
+                    <!-- Tabla de Especificaciones Técnicas -->
+                    <div class="panel" style="margin-top:20px;">
+                        <div class="panel-hdr">DETALLE TÉCNICO Y MANTENIMIENTO</div>
+                        <table class="tbl">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Fabricante / Modelo</th>
+                                    <th>Capacidad</th>
+                                    <th>Costo/Hr</th>
+                                    <th>Último Mantenimiento</th>
+                                    <th>Próximo Mantenimiento</th>
+                                    <th>Uso Mes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="machines-table-body">
+                                <!-- Se carga dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- INVENTARIO -->
+            <div class="page" id="pg-inventory" style="display:none;">
+                <div class="content-padding">
+                    <div class="section-hdr">
+                        <h2 style="font-family:'Bebas Neue'; color:var(--accent); letter-spacing:1px;">CONTROL DE
+                            INVENTARIO Y MATERIALES</h2>
+                    </div>
+
+                    <!-- KPIs Inventario -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Total SKUs</div>
+                            <div id="inv-kpi-skus" class="kpi-value">0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--accent3);">
+                            <div class="kpi-label">Valor Estimado (USD)</div>
+                            <div id="inv-kpi-value" class="kpi-value">$0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--accent);">
+                            <div class="kpi-label">Bajo Stock Mínimo</div>
+                            <div id="inv-kpi-low" class="kpi-value" style="color:var(--accent)">0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--red);">
+                            <div class="kpi-label">Sin Existencias (OUT)</div>
+                            <div id="inv-kpi-out" class="kpi-value" style="color:var(--red)">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Materiales -->
+                    <div class="panel">
+                        <div class="panel-hdr">STOCK DE MATERIA PRIMA Y HERRAMIENTAS</div>
+                        <table class="tbl">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Descripción</th>
+                                    <th>Categoría</th>
+                                    <th>Ubicación</th>
+                                    <th>Existencia</th>
+                                    <th>Mínimo</th>
+                                    <th>Costo Unit.</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body">
+                                <!-- Dinámico -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- VENTAS -->
+            <div class="page" id="pg-sales" style="display:none;">
+                <div class="content-padding">
+                    <div class="section-hdr">
+                        <h2 style="font-family:'Bebas Neue'; color:var(--accent); letter-spacing:1px;">COTIZACIONES Y
+                            FACTURACIÓN</h2>
+                    </div>
+                    <div class="kpi-grid">
+                        <div class="kpi-card" style="border-top-color: var(--accent3);">
+                            <div class="kpi-label">Revenue MTD</div>
+                            <div id="sales-kpi-rev" class="kpi-value">$0</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Cotizaciones Abiertas</div>
+                            <div id="sales-kpi-quotes" class="kpi-value">0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--accent2);">
+                            <div class="kpi-label">Cuentas por Cobrar</div>
+                            <div id="sales-kpi-ar" class="kpi-value">$0</div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-hdr">HISTORIAL DE COTIZACIONES</div>
+                        <table class="tbl">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Cliente</th>
+                                    <th>Descripción</th>
+                                    <th>Total</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sales-table-quotes"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- CLIENTES -->
+            <div class="page" id="pg-clients" style="display:none;">
+                <div class="content-padding">
+                    <div class="section-hdr">
+                        <h2 style="font-family:'Bebas Neue'; color:var(--accent); letter-spacing:1px;">DIRECTORIO DE
+                            CLIENTES</h2>
+                    </div>
+                    <div class="panel">
+                        <table class="tbl">
+                            <thead>
+                                <tr>
+                                    <th>Razón Social</th>
+                                    <th>Contacto</th>
+                                    <th>Ubicación</th>
+                                    <th>Pago</th>
+                                    <th>Rating</th>
+                                    <th>Notas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clients-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- COMPRAS -->
+            <div class="page" id="pg-purchases" style="display:none;">
+                <div class="content-padding">
+                    <div class="section-hdr">
+                        <h2 style="font-family:'Bebas Neue'; color:var(--accent); letter-spacing:1px;">ÓRDENES DE COMPRA
+                            (PO)</h2>
+                    </div>
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">POs Pendientes</div>
+                            <div id="purch-kpi-open" class="kpi-value">0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--accent2);">
+                            <div class="kpi-label">Gasto Mes (MTD)</div>
+                            <div id="purch-kpi-spent" class="kpi-value">$0</div>
+                        </div>
+                        <div class="kpi-card" style="border-top-color: var(--red);">
+                            <div class="kpi-label">Cuentas por Pagar</div>
+                            <div id="purch-kpi-ap" class="kpi-value" style="color:var(--red)">$0</div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-hdr">REGISTRO DE ÓRDENES DE COMPRA</div>
+                        <table class="tbl">
+                            <thead>
+                                <tr>
+                                    <th>PO #</th>
+                                    <th>Proveedor</th>
+                                    <th>Emisión</th>
+                                    <th>Requerido</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="purchases-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROVEEDORES -->
+            <div class="page" id="pg-suppliers" style="display:none;">
+                <div class="content-padding">
+                    <div class="section-hdr">
+                        <h2 style="font-family:'Bebas Neue'; color:var(--accent); letter-spacing:1px;">DIRECTORIO DE
+                            PROVEEDORES</h2>
+                    </div>
+                    <div class="panel">
+                        <table class="tbl">
+                            <thead>
+                                <tr>
+                                    <th>Proveedor</th>
+                                    <th>Categoría</th>
+                                    <th>Contacto</th>
+                                    <th>On-Time %</th>
+                                    <th>Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suppliers-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="js/dashboard.js"></script>
+</body>
+
+</html>
