@@ -230,6 +230,59 @@ app.get('/api/suppliers/list', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+//endpoints para registro de datos dentro del ERP
+// --- API CREACIÓN DE REGISTROS ---
+// Crear Nueva Orden de Trabajo (WO)
+app.post('/api/create/work-order', async (req, res) => {
+    const { numero, cliente_id, descripcion, material_codigo, cantidad, fecha_entrega_plan, estacion_id } = req.body;
+    try {
+        const pool = await poolPromise;
+        await pool.request()
+            .input('numero', sql.NVarChar, numero)
+            .input('cliente_id', sql.Int, cliente_id)
+            .input('descripcion', sql.NVarChar, descripcion)
+            .input('material_codigo', sql.NVarChar, material_codigo)
+            .input('cantidad', sql.Decimal(10, 3), cantidad)
+            .input('fecha', sql.Date, fecha_entrega_plan)
+            .input('estacion_id', sql.Int, estacion_id)
+            .query(`INSERT INTO ordenes_trabajo (numero, cliente_id, descripcion, material_codigo, cantidad, fecha_entrega_plan, estacion_principal_id, estado, avance_pct, prioridad) 
+                    VALUES (@numero, @cliente_id, @descripcion, @material_codigo, @cantidad, @fecha, @estacion_id, 'Programada', 0, 3)`);
+
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Crear Nuevo Cliente
+app.post('/api/create/client', async (req, res) => {
+    const { razon_social, contacto, email, telefono, ciudad } = req.body;
+    try {
+        const pool = await poolPromise;
+        await pool.request()
+            .input('rs', sql.NVarChar, razon_social)
+            .input('co', sql.NVarChar, contacto)
+            .input('em', sql.NVarChar, email)
+            .input('te', sql.NVarChar, telefono)
+            .input('ci', sql.NVarChar, ciudad)
+            .query(`INSERT INTO clientes (razon_social, nombre_contacto, email, telefono, ciudad, activo, rating) 
+                    VALUES (@rs, @co, @em, @te, @ci, 1, 3)`);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Helpers para llenar Selects (Dropdowns) <-- importante! TODO: Testing
+app.get('/api/helpers/clients', async (req, res) => {
+    const pool = await poolPromise;
+    const result = await pool.request().query("SELECT id, razon_social FROM clientes WHERE activo = 1");
+    res.json(result.recordset);
+});
+
+app.get('/api/helpers/machines', async (req, res) => {
+    const pool = await poolPromise;
+    const result = await pool.request().query("SELECT id, nombre FROM estaciones_trabajo WHERE estado = 'Operativo'");
+    res.json(result.recordset);
+});
+
+
 //process by odenfis
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Servidor en http://localhost:${PORT}`));

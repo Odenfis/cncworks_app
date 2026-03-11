@@ -96,6 +96,12 @@
             <!-- PRODUCCION -->
             <div class="page" id="pg-production" style="display:none;">
                 <div class="content-padding">
+                    <div class="section-hdr">
+                        <h2 style="font-family:'Bebas Neue'; color:var(--accent); letter-spacing:1px;">CONTROL MAESTRO
+                            DE PRODUCCIÓN</h2>
+                        <button class="btn-primary" style="padding:5px 15px; font-size:14px;"
+                            onclick="openModal('production')">+ NUEVA WO</button>
+                    </div>
                     <!-- KPIs Produccion -->
                     <div class="kpi-grid">
                         <div class="kpi-card">
@@ -272,6 +278,8 @@
                     <div class="section-hdr">
                         <h2 style="font-family:'Bebas Neue'; color:var(--accent); letter-spacing:1px;">DIRECTORIO DE
                             CLIENTES</h2>
+                        <button class="btn-primary" style="padding:5px 15px; font-size:14px;"
+                            onclick="openModal('client')">+ NUEVO CLIENTE</button>
                     </div>
                     <div class="panel">
                         <table class="tbl">
@@ -329,7 +337,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- PROVEEDORES -->
             <div class="page" id="pg-suppliers" style="display:none;">
                 <div class="content-padding">
@@ -354,6 +361,18 @@
                 </div>
             </div>
         </main>
+    </div>
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modalTitle">NUEVO REGISTRO</h3>
+            <form id="dynamicForm">
+                <div id="formFields"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">CANCELAR</button>
+                    <button type="submit" class="btn-primary">GUARDAR REGISTRO</button>
+                </div>
+            </form>
+        </div>
     </div>
     <script src="js/dashboard.js"></script>
 </body>
