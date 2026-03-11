@@ -332,9 +332,33 @@ async function openModal(type) {
     overlay.style.display = 'flex';
 
     if (type === 'production') {
-        // ... (código anterior de production)
+        document.getElementById('modalTitle').textContent = 'NUEVA ORDEN DE TRABAJO (WO)';
+        const clients = await (await fetch('/api/helpers/clients')).json();
+        const machines = await (await fetch('/api/helpers/machines')).json();
+
+        fields.innerHTML = `
+            <div class="form-group"><label>NÚMERO WO</label><input type="text" id="wo_num" placeholder="Ej: WO-3000" required></div>
+            <div class="form-group"><label>CLIENTE</label>
+                <select id="wo_client">${clients.map(c => `<option value="${c.id}">${c.razon_social}</option>`).join('')}</select>
+            </div>
+            <div class="form-group"><label>DESCRIPCIÓN</label><input type="text" id="wo_desc" required></div>
+            <div class="form-group"><label>CANTIDAD</label><input type="number" id="wo_qty" required></div>
+            <div class="form-group"><label>FECHA ENTREGA</label><input type="date" id="wo_date" required></div>
+            <div class="form-group"><label>MÁQUINA PRINCIPAL</label>
+                <select id="wo_machine">${machines.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('')}</select>
+            </div>
+            <input type="hidden" id="formType" value="production">
+        `;
     } else if (type === 'client') {
-        // ... (código anterior de client)
+        document.getElementById('modalTitle').textContent = 'NUEVO CLIENTE';
+        fields.innerHTML = `
+            <div class="form-group"><label>RAZÓN SOCIAL</label><input type="text" id="c_rs" required></div>
+            <div class="form-group"><label>CONTACTO</label><input type="text" id="c_co" required></div>
+            <div class="form-group"><label>EMAIL</label><input type="email" id="c_em" required></div>
+            <div class="form-group"><label>TELÉFONO</label><input type="text" id="c_te"></div>
+            <div class="form-group"><label>CIUDAD</label><input type="text" id="c_ci"></div>
+            <input type="hidden" id="formType" value="client">
+        `;
     } else if (type === 'inventory') {
         document.getElementById('modalTitle').textContent = 'NUEVO MATERIAL / SKU';
         const cats = await (await fetch('/api/helpers/categories')).json();
@@ -377,9 +401,26 @@ document.getElementById('dynamicForm').addEventListener('submit', async (e) => {
     let payload = {};
     let endpoint = '';
 
-    if (type === 'production') { /* ... */ }
-    else if (type === 'client') { /* ... */ }
-    else if (type === 'inventory') {
+    if (type === 'production') {
+        endpoint = '/api/create/work-order';
+        payload = {
+            numero: document.getElementById('wo_num').value,
+            cliente_id: document.getElementById('wo_client').value,
+            descripcion: document.getElementById('wo_desc').value,
+            cantidad: document.getElementById('wo_qty').value,
+            fecha_entrega_plan: document.getElementById('wo_date').value,
+            estacion_id: document.getElementById('wo_machine').value
+        };
+    } else if (type === 'client') {
+        endpoint = '/api/create/client';
+        payload = {
+            razon_social: document.getElementById('c_rs').value,
+            contacto: document.getElementById('c_co').value,
+            email: document.getElementById('c_em').value,
+            telefono: document.getElementById('c_te').value,
+            ciudad: document.getElementById('c_ci').value
+        };
+    } else if (type === 'inventory') {
         endpoint = '/api/create/material';
         payload = {
             codigo: document.getElementById('m_cod').value,
@@ -409,9 +450,9 @@ document.getElementById('dynamicForm').addEventListener('submit', async (e) => {
 
     const data = await res.json();
     if (data.success) {
-        alert('Guardado exitosamente');
+        alert('Registro guardado con éxito');
         closeModal();
-        // Recargar datos de la página actual
+        // Recargar la página actual para ver los cambios
         if (type === 'inventory') loadInventoryData();
         if (type === 'purchase') loadPurchasesData();
         if (type === 'production') loadProductionData();
