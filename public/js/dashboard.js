@@ -332,32 +332,36 @@ async function openModal(type) {
     overlay.style.display = 'flex';
 
     if (type === 'production') {
-        document.getElementById('modalTitle').textContent = 'NUEVA ORDEN DE TRABAJO (WO)';
-        const clients = await (await fetch('/api/helpers/clients')).json();
-        const machines = await (await fetch('/api/helpers/machines')).json();
-
-        fields.innerHTML = `
-            <div class="form-group"><label>NÚMERO WO</label><input type="text" id="wo_num" placeholder="Ej: WO-3000" required></div>
-            <div class="form-group"><label>CLIENTE</label>
-                <select id="wo_client">${clients.map(c => `<option value="${c.id}">${c.razon_social}</option>`).join('')}</select>
-            </div>
-            <div class="form-group"><label>DESCRIPCIÓN</label><input type="text" id="wo_desc" required></div>
-            <div class="form-group"><label>CANTIDAD</label><input type="number" id="wo_qty" required></div>
-            <div class="form-group"><label>FECHA ENTREGA</label><input type="date" id="wo_date" required></div>
-            <div class="form-group"><label>MÁQUINA PRINCIPAL</label>
-                <select id="wo_machine">${machines.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('')}</select>
-            </div>
-            <input type="hidden" id="formType" value="production">
-        `;
+        // ... (código anterior de production)
     } else if (type === 'client') {
-        document.getElementById('modalTitle').textContent = 'NUEVO CLIENTE';
+        // ... (código anterior de client)
+    } else if (type === 'inventory') {
+        document.getElementById('modalTitle').textContent = 'NUEVO MATERIAL / SKU';
+        const cats = await (await fetch('/api/helpers/categories')).json();
         fields.innerHTML = `
-            <div class="form-group"><label>RAZÓN SOCIAL</label><input type="text" id="c_rs" required></div>
-            <div class="form-group"><label>CONTACTO</label><input type="text" id="c_co" required></div>
-            <div class="form-group"><label>EMAIL</label><input type="email" id="c_em" required></div>
-            <div class="form-group"><label>TELÉFONO</label><input type="text" id="c_te"></div>
-            <div class="form-group"><label>CIUDAD</label><input type="text" id="c_ci"></div>
-            <input type="hidden" id="formType" value="client">
+            <div class="form-group"><label>CÓDIGO / SKU</label><input type="text" id="m_cod" required></div>
+            <div class="form-group"><label>DESCRIPCIÓN</label><input type="text" id="m_des" required></div>
+            <div class="form-group"><label>CATEGORÍA</label>
+                <select id="m_cat">${cats.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}</select>
+            </div>
+            <div class="form-group"><label>UNIDAD (lbs, pcs, gal)</label><input type="text" id="m_uni" required></div>
+            <div class="form-group"><label>COSTO UNITARIO</label><input type="number" step="0.0001" id="m_cos" required></div>
+            <div class="form-group"><label>STOCK MÍNIMO</label><input type="number" id="m_min" required></div>
+            <div class="form-group"><label>UBICACIÓN (Rack/Bin)</label><input type="text" id="m_ubi"></div>
+            <input type="hidden" id="formType" value="inventory">
+        `;
+    } else if (type === 'purchase') {
+        document.getElementById('modalTitle').textContent = 'NUEVA ÓRDEN DE COMPRA (PO)';
+        const suppliers = await (await fetch('/api/helpers/suppliers')).json();
+        fields.innerHTML = `
+            <div class="form-group"><label>NÚMERO PO</label><input type="text" id="po_num" placeholder="PO-0000" required></div>
+            <div class="form-group"><label>PROVEEDOR</label>
+                <select id="po_sup">${suppliers.map(s => `<option value="${s.id}">${s.razon_social}</option>`).join('')}</select>
+            </div>
+            <div class="form-group"><label>FECHA REQUERIDA</label><input type="date" id="po_date" required></div>
+            <div class="form-group"><label>TOTAL ESTIMADO (USD)</label><input type="number" step="0.01" id="po_tot" required></div>
+            <div class="form-group"><label>NOTAS / REFERENCIA</label><textarea id="po_not"></textarea></div>
+            <input type="hidden" id="formType" value="purchase">
         `;
     }
 }
@@ -373,24 +377,27 @@ document.getElementById('dynamicForm').addEventListener('submit', async (e) => {
     let payload = {};
     let endpoint = '';
 
-    if (type === 'production') {
-        endpoint = '/api/create/work-order';
+    if (type === 'production') { /* ... */ }
+    else if (type === 'client') { /* ... */ }
+    else if (type === 'inventory') {
+        endpoint = '/api/create/material';
         payload = {
-            numero: document.getElementById('wo_num').value,
-            cliente_id: document.getElementById('wo_client').value,
-            descripcion: document.getElementById('wo_desc').value,
-            cantidad: document.getElementById('wo_qty').value,
-            fecha_entrega_plan: document.getElementById('wo_date').value,
-            estacion_id: document.getElementById('wo_machine').value
+            codigo: document.getElementById('m_cod').value,
+            descripcion: document.getElementById('m_des').value,
+            categoria_id: document.getElementById('m_cat').value,
+            unidad: document.getElementById('m_uni').value,
+            costo: document.getElementById('m_cos').value,
+            stock_min: document.getElementById('m_min').value,
+            ubicacion: document.getElementById('m_ubi').value
         };
-    } else if (type === 'client') {
-        endpoint = '/api/create/client';
+    } else if (type === 'purchase') {
+        endpoint = '/api/create/purchase-order';
         payload = {
-            razon_social: document.getElementById('c_rs').value,
-            contacto: document.getElementById('c_co').value,
-            email: document.getElementById('c_em').value,
-            telefono: document.getElementById('c_te').value,
-            ciudad: document.getElementById('c_ci').value
+            numero: document.getElementById('po_num').value,
+            proveedor_id: document.getElementById('po_sup').value,
+            fecha_req: document.getElementById('po_date').value,
+            total: document.getElementById('po_tot').value,
+            notas: document.getElementById('po_not').value
         };
     }
 
@@ -402,9 +409,11 @@ document.getElementById('dynamicForm').addEventListener('submit', async (e) => {
 
     const data = await res.json();
     if (data.success) {
-        alert('Registro guardado con éxito');
+        alert('Guardado exitosamente');
         closeModal();
-        // Recargar la página actual para ver los cambios
+        // Recargar datos de la página actual
+        if (type === 'inventory') loadInventoryData();
+        if (type === 'purchase') loadPurchasesData();
         if (type === 'production') loadProductionData();
         if (type === 'client') loadClientsData();
     }

@@ -282,6 +282,56 @@ app.get('/api/helpers/machines', async (req, res) => {
     res.json(result.recordset);
 });
 
+// --- API CREACIÓN: INVENTARIO Y COMPRAS ---
+
+// Crear Nuevo Material
+app.post('/api/create/material', async (req, res) => {
+    const { codigo, descripcion, categoria_id, unidad, costo, stock_min, ubicacion } = req.body;
+    try {
+        const pool = await poolPromise;
+        await pool.request()
+            .input('cod', sql.NVarChar, codigo)
+            .input('des', sql.NVarChar, descripcion)
+            .input('cat', sql.Int, categoria_id)
+            .input('uni', sql.NVarChar, unidad)
+            .input('cos', sql.Decimal(10, 4), costo)
+            .input('min', sql.Decimal(10, 3), stock_min)
+            .input('ubi', sql.NVarChar, ubicacion)
+            .query(`INSERT INTO materiales (codigo, descripcion, categoria_id, unidad_medida, costo_unitario, stock_minimo, stock_actual, ubicacion_almacen, activo) 
+                    VALUES (@cod, @des, @cat, @uni, @cos, @min, 0, @ubi, 1)`);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Crear Nueva Orden de Compra (PO)
+app.post('/api/create/purchase-order', async (req, res) => {
+    const { numero, proveedor_id, fecha_req, total, notas } = req.body;
+    try {
+        const pool = await poolPromise;
+        await pool.request()
+            .input('num', sql.NVarChar, numero)
+            .input('pro', sql.Int, proveedor_id)
+            .input('fec', sql.Date, fecha_req)
+            .input('tot', sql.Decimal(12, 2), total)
+            .input('not', sql.NVarChar, notas)
+            .query(`INSERT INTO ordenes_compra (numero, proveedor_id, fecha_emision, fecha_requerida, total, estado, urgente, notas) 
+                    VALUES (@num, @pro, GETDATE(), @fec, @tot, 'Enviada', 0, @not)`);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Helpers adicionales
+app.get('/api/helpers/categories', async (req, res) => {
+    const pool = await poolPromise;
+    const result = await pool.request().query("SELECT id, nombre FROM categorias_material");
+    res.json(result.recordset);
+});
+
+app.get('/api/helpers/suppliers', async (req, res) => {
+    const pool = await poolPromise;
+    const result = await pool.request().query("SELECT id, razon_social FROM proveedores WHERE activo = 1");
+    res.json(result.recordset);
+});
 
 //process by odenfis
 const PORT = process.env.PORT || 3000;
