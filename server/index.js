@@ -139,7 +139,7 @@ app.get('/api/inventory/list', async (req, res) => {
         const pool = await poolPromise;
         const result = await pool.request().query(`
             SELECT 
-                m.codigo, m.descripcion, c.nombre as categoria, 
+                m.id, m.codigo, m.descripcion, c.nombre as categoria, 
                 m.stock_actual, m.stock_minimo, m.unidad_medida, 
                 m.costo_unitario, m.ubicacion_almacen
             FROM materiales m
@@ -210,8 +210,9 @@ app.get('/api/purchases/stats', async (req, res) => {
 app.get('/api/purchases/list', async (req, res) => {
     try {
         const pool = await poolPromise;
+        //agregamos id para mejorar la consulta
         const result = await pool.request().query(`
-            SELECT oc.numero, p.razon_social as proveedor, oc.fecha_emision, oc.fecha_requerida, oc.total, oc.estado, oc.urgente
+            SELECT oc.id, oc.numero, p.razon_social as proveedor, oc.fecha_emision, oc.fecha_requerida, oc.total, oc.estado, oc.urgente
             FROM ordenes_compra oc
             JOIN proveedores p ON oc.proveedor_id = p.id
             ORDER BY oc.fecha_emision DESC`);
@@ -305,18 +306,46 @@ app.post('/api/create/material', async (req, res) => {
 
 // Crear Nueva Orden de Compra (PO)
 app.post('/api/create/purchase-order', async (req, res) => {
-    const { numero, proveedor_id, fecha_req, total, notas } = req.body;
+    const { numero, proveedor_id, fecha_req, total, material_id, cantidad, notas } = req.body;
+
+    // Validación de seguridad para evitar división por cero
+    if (!cantidad || cantidad <= 0) {
+        return res.status(400).json({ success: false, error: "La cantidad debe ser mayor a 0" });
+    }
+
     try {
         const pool = await poolPromise;
-        await pool.request()
-            .input('num', sql.NVarChar, numero)
-            .input('pro', sql.Int, proveedor_id)
-            .input('fec', sql.Date, fecha_req)
-            .input('tot', sql.Decimal(12, 2), total)
-            .input('not', sql.NVarChar, notas)
-            .query(`INSERT INTO ordenes_compra (numero, proveedor_id, fecha_emision, fecha_requerida, total, estado, urgente, notas) 
-                    VALUES (@num, @pro, GETDATE(), @fec, @tot, 'Enviada', 0, @not)`);
-        res.json({ success: true });
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
+
+        try {
+            const result = await transaction.request()
+                .input('num', sql.NVarChar, numero)
+                .input('pro', sql.Int, proveedor_id)
+                .input('fec', sql.Date, fecha_req)
+                .input('tot', sql.Decimal(12, 2), total)
+                .input('not', sql.NVarChar, notas)
+                .query(`INSERT INTO ordenes_compra (numero, proveedor_id, fecha_emision, fecha_requerida, total, estado, urgente, notas) 
+                        OUTPUT INSERTED.id
+                        VALUES (@num, @pro, GETDATE(), @fec, @tot, 'Enviada', 0, @not)`);
+
+            const newPoId = result.recordset[0].id;
+            const precioUnitario = total / cantidad; // Ahora es seguro calcularlo
+
+            await transaction.request()
+                .input('ocId', sql.Int, newPoId)
+                .input('matId', sql.Int, material_id)
+                .input('qty', sql.Decimal(10, 3), cantidad)
+                .input('pre', sql.Decimal(10, 4), precioUnitario)
+                .query(`INSERT INTO oc_lineas (oc_id, linea, material_id, cantidad, precio_unitario, subtotal) 
+                        VALUES (@ocId, 1, @matId, @qty, @pre, @qty * @pre)`);
+
+            await transaction.commit();
+            res.json({ success: true });
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -331,6 +360,49 @@ app.get('/api/helpers/suppliers', async (req, res) => {
     const pool = await poolPromise;
     const result = await pool.request().query("SELECT id, razon_social FROM proveedores WHERE activo = 1");
     res.json(result.recordset);
+});
+
+// --- RECEPCION DE MERCANCIA ---
+
+app.put('/api/purchases/receive/:id', async (req, res) => {
+    const poId = req.params.id;
+
+    try {
+        const pool = await poolPromise;
+
+        // Iniciamos una transacción (seguridad de datos)
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
+
+        try {
+            // Buscamos los materiales y cantidades asociados a esta PO (tabla oc_lineas)
+            const lines = await transaction.request()
+                .input('poId', sql.Int, poId)
+                .query("SELECT material_id, cantidad FROM oc_lineas WHERE oc_id = @poId");
+
+            // Por cada línea --> actualizamos el stock en la tabla materiales
+            for (let line of lines.recordset) {
+                await transaction.request()
+                    .input('matId', sql.Int, line.material_id)
+                    .input('qty', sql.Decimal(10, 3), line.cantidad)
+                    .query("UPDATE materiales SET stock_actual = stock_actual + @qty, updated_at = GETDATE() WHERE id = @matId");
+            }
+
+            // Actualizamos la Orden de Compra (estado y fecha de recepcion)
+            await transaction.request()
+                .input('poId', sql.Int, poId)
+                .query("UPDATE ordenes_compra SET estado = 'Recibida', fecha_recepcion = GETDATE() WHERE id = @poId");
+
+            await transaction.commit();
+            res.json({ success: true, message: 'Stock actualizado y PO marcada como recibida' });
+
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 //process by odenfis

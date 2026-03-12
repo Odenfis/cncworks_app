@@ -289,21 +289,28 @@ async function loadPurchasesData() {
         document.getElementById('purch-kpi-open').textContent = stats.openPOs;
         document.getElementById('purch-kpi-spent').textContent = `$${(stats.spentMTD || 0).toLocaleString()}`;
         document.getElementById('purch-kpi-ap').textContent = `$${(stats.accountsPayable || 0).toLocaleString()}`;
-
         const resList = await fetch('/api/purchases/list');
         const pos = await resList.json();
-        document.getElementById('purchases-table-body').innerHTML = pos.map(p => `
-            <tr>
-                <td style="font-family:'IBM Plex Mono'; font-weight:600;">${p.numero} ${p.urgente ? '⚠️' : ''}</td>
-                <td>${p.proveedor}</td>
-                <td>${new Date(p.fecha_emision).toLocaleDateString()}</td>
-                <td style="color:${new Date(p.fecha_requerida) < new Date() ? 'var(--red)' : 'var(--text)'}">
-                    ${new Date(p.fecha_requerida).toLocaleDateString()}
-                </td>
-                <td>$${p.total.toLocaleString()}</td>
-                <td><span class="pill ${p.estado === 'Recibida' ? 'done' : 'prog'}">${p.estado}</span></td>
-            </tr>
-        `).join('');
+
+        document.getElementById('purchases-table-body').innerHTML = pos.map(p => {
+            // Solo mostramos el botón si el estado es diferente a 'Recibida'
+            const actionBtn = p.estado !== 'Recibida'
+                ? `<button class="btn-primary" style="padding:2px 8px; font-size:10px; background:var(--accent3);" 
+                    onclick="processReceipt(${p.id}, '${p.numero}')">RECIBIR</button>`
+                : `<span style="color:var(--muted); font-size:10px;">Completado</span>`;
+            return `
+                <tr>
+                    <td style="font-family:'IBM Plex Mono'; font-weight:600;">${p.numero}</td>
+                    <td>${p.proveedor}</td>
+                    <td>${new Date(p.fecha_emision).toLocaleDateString()}</td>
+                    <td>${new Date(p.fecha_requerida).toLocaleDateString()}</td>
+                    <td>$${p.total.toLocaleString()}</td>
+                    <td><span class="pill ${p.estado === 'Recibida' ? 'done' : 'prog'}">${p.estado}</span></td>
+                    <td>${actionBtn}</td>
+                </tr>
+            `;
+        }).join('');
+
     } catch (e) { console.error(e); }
 }
 
@@ -376,8 +383,13 @@ async function openModal(type) {
         `;
     } else if (type === 'purchase') {
         document.getElementById('modalTitle').textContent = 'NUEVA ÓRDEN DE COMPRA (PO)';
+        const materials = await (await fetch('/api/inventory/list')).json();
         const suppliers = await (await fetch('/api/helpers/suppliers')).json();
-        fields.innerHTML = `
+        fields.innerHTML = `            
+            <div class="form-group"><label>MATERIAL A COMPRAR</label>
+                <select id="po_mat">${materials.map(m => `<option value="${m.id}">${m.descripcion}</option>`).join('')}</select>
+            </div>
+            <div class="form-group"><label>CANTIDAD</label><input type="number" id="po_qty" required></div>
             <div class="form-group"><label>NÚMERO PO</label><input type="text" id="po_num" placeholder="PO-0000" required></div>
             <div class="form-group"><label>PROVEEDOR</label>
                 <select id="po_sup">${suppliers.map(s => `<option value="${s.id}">${s.razon_social}</option>`).join('')}</select>
@@ -438,7 +450,10 @@ document.getElementById('dynamicForm').addEventListener('submit', async (e) => {
             proveedor_id: document.getElementById('po_sup').value,
             fecha_req: document.getElementById('po_date').value,
             total: document.getElementById('po_tot').value,
-            notas: document.getElementById('po_not').value
+            notas: document.getElementById('po_not').value,
+            // AGREGADO: Estos campos son necesarios para que la PO tenga contenido que recibir
+            material_id: document.getElementById('po_mat').value,
+            cantidad: document.getElementById('po_qty').value
         };
     }
 
@@ -459,3 +474,24 @@ document.getElementById('dynamicForm').addEventListener('submit', async (e) => {
         if (type === 'client') loadClientsData();
     }
 });
+
+//Funcion nueva
+async function processReceipt(poId, poNum) {
+    if (!confirm(`¿Confirmar recepción de la orden ${poNum}? El stock aumentará automáticamente.`)) return;
+
+    try {
+        const res = await fetch(`/api/purchases/receive/${poId}`, { method: 'PUT' });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message);
+            // CORRECCIÓN: Refrescar ambas tablas para que el cambio sea visible
+            loadPurchasesData();
+            loadInventoryData();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) {
+        alert('Error de conexión al procesar recepción');
+    }
+}
