@@ -405,6 +405,45 @@ app.put('/api/purchases/receive/:id', async (req, res) => {
     }
 });
 
+// --- API FINANZAS Y CAJA ---
+// Resumen P&L (Ingresos vs Gastos del mes actual)
+app.get('/api/finance/pl-summary', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT 
+                ISNULL((SELECT SUM(total) FROM facturas WHERE MONTH(fecha_emision) = MONTH(GETDATE())), 0) as ingresos,
+                ISNULL((SELECT SUM(monto) FROM transacciones WHERE tipo = 'Egreso' AND MONTH(fecha) = MONTH(GETDATE())), 0) as egresos,
+                ISNULL((SELECT SUM(saldo) FROM facturas WHERE estado <> 'Pagada'), 0) as porCobrar,
+                ISNULL((SELECT SUM(saldo) FROM cuentas_pagar WHERE estado <> 'Pagada'), 0) as porPagar
+        `);
+        res.json(result.recordset[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Estado de Cuentas Bancarias
+app.get('/api/finance/bank-accounts', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query("SELECT * FROM cuentas_bancarias WHERE activa = 1");
+        res.json(result.recordset);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Últimas Transacciones
+app.get('/api/finance/transactions', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT TOP 10 t.fecha, t.descripcion, t.tipo, t.monto, t.categoria, cb.nombre as cuenta
+            FROM transacciones t
+            JOIN cuentas_bancarias cb ON t.cuenta_id = cb.id
+            ORDER BY t.fecha DESC
+        `);
+        res.json(result.recordset);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 //process by odenfis
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Servidor en http://localhost:${PORT}`));

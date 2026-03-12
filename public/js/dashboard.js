@@ -104,6 +104,14 @@ function showPage(pageKey) {
         document.getElementById('pg-suppliers').style.display = 'block';
         document.getElementById('nav-suppliers').classList.add('active');
         loadSuppliersData();
+    } else if (pageKey === 'finance') {
+        document.getElementById('pg-finance').style.display = 'block';
+        document.getElementById('nav-finance').classList.add('active');
+        loadFinanceData();
+    } else if (pageKey === 'cashflow') {
+        document.getElementById('pg-cashflow').style.display = 'block';
+        document.getElementById('nav-cashflow').classList.add('active');
+        loadCashflowData();
     }
 }
 
@@ -475,7 +483,7 @@ document.getElementById('dynamicForm').addEventListener('submit', async (e) => {
     }
 });
 
-//Funcion nueva
+//Funcion nueva para recepcion de PO (Ordenes de compra)
 async function processReceipt(poId, poNum) {
     if (!confirm(`¿Confirmar recepción de la orden ${poNum}? El stock aumentará automáticamente.`)) return;
 
@@ -494,4 +502,51 @@ async function processReceipt(poId, poNum) {
     } catch (e) {
         alert('Error de conexión al procesar recepción');
     }
+}
+
+// funciones financieras
+
+async function loadFinanceData() {
+    try {
+        const res = await fetch('/api/finance/pl-summary');
+        const data = await res.json();
+
+        document.getElementById('fin-ingresos').textContent = `$${data.ingresos.toLocaleString()}`;
+        document.getElementById('fin-egresos').textContent = `$${data.egresos.toLocaleString()}`;
+        document.getElementById('fin-utilidad').textContent = `$${(data.ingresos - data.egresos).toLocaleString()}`;
+        document.getElementById('fin-ar').textContent = `$${data.porCobrar.toLocaleString()}`;
+        document.getElementById('fin-ap').textContent = `$${data.porPagar.toLocaleString()}`;
+    } catch (e) { console.error(e); }
+}
+
+async function loadCashflowData() {
+    try {
+        // Cargar Cuentas
+        const resBanks = await fetch('/api/finance/bank-accounts');
+        const banks = await resBanks.json();
+        document.getElementById('bank-accounts-grid').innerHTML = banks.map(b => `
+            <div class="panel" style="padding:15px; border-top: 3px solid ${b.saldo_actual >= 0 ? 'var(--accent3)' : 'var(--red)'}">
+                <div style="font-size:10px; color:var(--muted);">${b.banco} (${b.ultimos4})</div>
+                <div style="font-weight:600; margin:5px 0;">${b.nombre}</div>
+                <div style="font-size:20px; font-family:'IBM Plex Mono'; color:${b.saldo_actual >= 0 ? 'white' : 'var(--red)'}">
+                    $${b.saldo_actual.toLocaleString()}
+                </div>
+            </div>
+        `).join('');
+
+        // Cargar Transacciones
+        const resTrans = await fetch('/api/finance/transactions');
+        const trans = await resTrans.json();
+        document.getElementById('transactions-table-body').innerHTML = trans.map(t => `
+            <tr>
+                <td>${new Date(t.fecha).toLocaleDateString()}</td>
+                <td>${t.descripcion}</td>
+                <td><span style="font-size:10px; color:var(--muted);">${t.categoria}</span></td>
+                <td>${t.cuenta}</td>
+                <td style="color:${t.tipo === 'Ingreso' ? 'var(--accent3)' : 'var(--red)'}; font-weight:600;">
+                    ${t.tipo === 'Ingreso' ? '+' : '-'}$${t.monto.toLocaleString()}
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error(e); }
 }
