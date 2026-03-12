@@ -620,3 +620,24 @@ function generateJobTraveler(wo, cliente, desc, cant, mat, maq) {
     // Descargar PDF
     doc.save(`JobTraveler_${wo}.pdf`);
 }
+
+// --- MODO CLARO / OSCURO ---
+function toggleTheme() {
+    const body = document.body;
+    body.classList.toggle('light-mode');
+
+    // Guardar preferencia
+    if (body.classList.contains('light-mode')) {
+        localStorage.setItem('theme', 'light');
+    } else {
+        localStorage.setItem('theme', 'dark');
+    }
+}
+
+// Aplicar tema guardado al cargar la página
+(function applySavedTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+    }
+})();

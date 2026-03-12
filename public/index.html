@@ -48,9 +48,13 @@
         <main class="main-content">
             <header class="topbar">
                 <div style="font-family:'Bebas Neue'; font-size:22px; letter-spacing:1px;">OPERATIONS DASHBOARD</div>
-                <div id="userBadge"
-                    style="font-size:11px; color:var(--muted); background:var(--card); padding:5px 12px; border:1px solid var(--border); border-radius:4px;">
-                    Cargando...
+                <div style="display: flex; align-items: center;">
+                    <!-- BOTÓN DE MODO CLARO/OSCURO -->
+                    <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()">🌓 MODO</button>
+                    <div id="userBadge"
+                        style="font-size:11px; color:var(--muted); background:var(--card); padding:5px 12px; border:1px solid var(--border); border-radius:4px;">
+                        Cargando...
+                    </div>
                 </div>
             </header>
             <div class="page" id="pg-dashboard">

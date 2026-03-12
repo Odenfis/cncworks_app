@@ -1,4 +1,15 @@
 :root {
+    /*
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --card: #181c26;
+    --border: #242836;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --accent3: #10b981;
+    --red: #ef4444;
+    --text: #e8eaf0;
+    --muted: #6b7280;*/
     --bg: #0d0f14;
     --surface: #13161e;
     --card: #181c26;
@@ -9,11 +20,31 @@
     --red: #ef4444;
     --text: #e8eaf0;
     --muted: #6b7280;
+    --sidebar-bg: #13161e;
 }
 
-/* RESET Y BASES */
+/* modo claro */
+body.light-mode {
+    --bg: #f3f4f6;
+    /* Gris muy claro */
+    --surface: #ffffff;
+    /* Blanco puro */
+    --card: #ffffff;
+    /* Blanco para paneles */
+    --border: #d1d5db;
+    /* Gris de borde suave */
+    --text: #111827;
+    /* Texto casi negro */
+    --muted: #4b5563;
+    /* Gris medio para texto secundario */
+    --sidebar-bg: #1f2937;
+    /* Mantendremos la sidebar oscura para contraste industrial */
+}
+
+/* RESET Y BASES - ajustes para elementos en ambos modos del sistema */
 * {
     box-sizing: border-box;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 
 body,
@@ -100,6 +131,8 @@ input[type="email"] {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    background: var(--sidebar-bg) !important;
+    /* Forzamos sidebar oscura siempre para modo elegante */
 }
 
 .main-content {
@@ -326,4 +359,21 @@ input[type="email"] {
     padding: 10px 20px;
     border-radius: 4px;
     cursor: pointer;
+}
+
+/* Botón flotante para el cambio de TEMA en la Topbar */
+.theme-toggle-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 15px;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--accent);
+    color: black;
 }
