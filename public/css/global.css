@@ -102,8 +102,8 @@ input[type="email"] {
 
 .btn-primary {
     width: 100%;
-    background: var(--accent);
-    color: black;
+    background: var(--accent) !important;
+    color: #000000 !important;
     border: none;
     padding: 14px;
     font-family: 'Bebas Neue', cursive;
@@ -114,7 +114,7 @@ input[type="email"] {
 }
 
 .btn-primary:hover {
-    background: #d97706;
+    background: #d97706 !important;
 }
 
 /* LAYOUT DEL DASHBOARD */
@@ -309,11 +309,21 @@ input[type="email"] {
 
 .modal-content {
     background: var(--card);
+    /* Usará blanco en Light y gris oscuro en Dark */
     border: 1px solid var(--border);
     width: 450px;
     padding: 30px;
     border-radius: 8px;
-    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Título del modal siempre visible */
+#modalTitle {
+    font-family: 'Bebas Neue', cursive;
+    color: var(--accent);
+    /* Ámbar */
+    font-size: 28px;
+    margin-bottom: 20px;
 }
 
 .modal-content h3 {
@@ -348,17 +358,37 @@ input[type="email"] {
 
 .modal-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+/* Estilo base para AMBOS botones del modal */
+.modal-actions button {
+    flex: 1;
+    /* Esto obliga a que midan lo mismo */
+    padding: 12px;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 18px;
+    letter-spacing: 1px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    transition: 0.2s;
 }
 
 .btn-secondary {
-    background: var(--subtle);
-    color: white;
+    background: #374151 !important;
+    /* Gris oscuro por defecto */
+    color: #ffffff !important;
+    /* Texto blanco */
     border: none;
     padding: 10px 20px;
     border-radius: 4px;
     cursor: pointer;
+}
+
+.btn-secondary:hover {
+    background: #4b5563 !important;
 }
 
 /* Botón flotante para el cambio de TEMA en la Topbar */
@@ -376,4 +406,32 @@ input[type="email"] {
 .theme-toggle-btn:hover {
     background: var(--accent);
     color: black;
+}
+
+/* --- AJUSTES ESPECÍFICOS PARA MODO CLARO --- */
+
+body.light-mode .btn-secondary {
+    background: #e5e7eb !important;
+    /* Gris claro en modo claro */
+    color: #374151 !important;
+    /* Texto gris oscuro */
+    border: 1px solid #d1d5db !important;
+}
+
+body.light-mode .btn-secondary:hover {
+    background: #d1d5db !important;
+}
+
+/* Estilos de los inputs en modo claro para que no se vean blancos sobre blanco */
+body.light-mode .form-group input,
+body.light-mode .form-group select,
+body.light-mode .form-group textarea {
+    background: #f9fafb;
+    color: #111827;
+    border: 1px solid #d1d5db;
+}
+
+body.light-mode .form-group label {
+    color: #4b5563;
+    font-weight: 600;
 }
