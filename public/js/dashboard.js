@@ -144,6 +144,12 @@ async function loadProductionData() {
                     <div class="prog-bg"><div class="prog-fill" style="width:${o.avance_pct}%"></div></div>
                 </td>
                 <td><span class="pill ${getStatusClass(o.estado)}">${o.estado}</span></td>
+                <td>
+            <button class="btn-primary" style="padding:2px 6px; background:var(--accent2); font-size:10px;" 
+                onclick="generateJobTraveler('${o.numero}', '${o.cliente}', '${o.descripcion}', '${o.cantidad} ${o.unidad}', '${o.material_codigo}', '${o.maquina || 'N/A'}')">
+                📄
+            </button>
+        </td>
             </tr>
         `).join('');
     } catch (err) { console.error("Error cargando producción:", err); }
@@ -549,4 +555,68 @@ async function loadCashflowData() {
             </tr>
         `).join('');
     } catch (e) { console.error(e); }
+}
+
+//funcion jobtraveler
+function generateJobTraveler(wo, cliente, desc, cant, mat, maq) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const logoColor = [245, 158, 11]; // El color ambar del sistema (tema)
+
+    // --- ENCABEZADO ---
+    doc.setFillColor(30, 30, 30);
+    doc.rect(0, 0, 210, 40, 'F');
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(245, 158, 11);
+    doc.text("PQ CNC WORKS, LLC", 15, 20);
+
+    doc.setFontSize(10);
+    doc.setTextColor(150, 150, 150);
+    doc.text("JOB TRAVELER / ORDEN DE FABRICACIÓN", 15, 30);
+    doc.text(`Fecha de Impresión: ${new Date().toLocaleString()}`, 130, 30);
+
+    // --- CUERPO ---
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.text(`ORDEN DE TRABAJO: ${wo}`, 15, 55);
+
+    // Tabla de detalles
+    doc.autoTable({
+        startY: 65,
+        head: [['CONCEPTO', 'DETALLE']],
+        body: [
+            ['CLIENTE', cliente],
+            ['PIEZA / DESCRIPCIÓN', desc],
+            ['CANTIDAD TOTAL', cant],
+            ['MATERIAL REQUERIDO', mat],
+            ['ESTACIÓN PRINCIPAL', maq],
+            ['ESTADO ACTUAL', 'PROGRAMADA / EN PROCESO'],
+            ['FECHA COMPROMISO', 'VER SISTEMA ERP']
+        ],
+        headStyles: { fillColor: [245, 158, 11], textColor: [0, 0, 0] },
+        styles: { fontSize: 11, cellPadding: 5 }
+    });
+
+    // --- SECCIÓN DE FIRMAS E INSPECCION ---
+    const finalY = doc.lastAutoTable.finalY + 20;
+    doc.setFontSize(12);
+    doc.text("CONTROL DE CALIDAD E INSPECCIÓN:", 15, finalY);
+
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, finalY + 15, 80, finalY + 15);
+    doc.line(110, finalY + 15, 185, finalY + 15);
+
+    doc.setFontSize(9);
+    doc.text("Firma Operador", 35, finalY + 20);
+    doc.text("Firma Inspector Calidad", 135, finalY + 20);
+
+    // Pie de pagina
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Documento generado automáticamente por PQ CNC ERP v1.0", 15, 285);
+
+    // Descargar PDF
+    doc.save(`JobTraveler_${wo}.pdf`);
 }
